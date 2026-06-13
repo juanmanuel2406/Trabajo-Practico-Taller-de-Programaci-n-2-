@@ -1,0 +1,58 @@
+============================================
+TP - CÓMO EJECUTAR EL PROYECTO
+API RESTful - Alumnos, Materias e Inscripciones
+Taller de Programación 2
+============================================
+
+1. BASE DE DATOS (MySQL)
+-------------------------
+Opción DbVisualizer (recomendada):
+  - Abrí DbVisualizer y conectate a tu MySQL
+  - Ejecutá: src/sql/esquema.sql
+  - Ejecutá: src/sql/datos.sql
+
+Opción consola:
+  mysql -u root -p < src/sql/esquema.sql
+  mysql -u root -p < src/sql/datos.sql
+
+Ya tenés un admin creado:
+  usuario: admin
+  contraseña: admin123
+
+
+2. CONFIGURAR .env
+-------------------
+Copiá .env.example a .env y completá:
+
+  DB_USER=root
+  DB_PASSWORD=tu_contraseña
+  JWT_SECRET=un_string_aleatorio
+
+
+3. INICIAR EL SERVIDOR
+-----------------------
+  npm install        (solo la primera vez)
+  npm run dev        (arranca en http://localhost:3000)
+
+
+4. PROBAR CON POSTMAN
+-----------------------
+  1. Importá: postman/API Alumnos.postman_collection.json
+  2. Ejecutá Login (admin / admin123)
+  3. El token se setea automáticamente
+  4. Probá los endpoints en orden:
+     - Crear alumnos (POST /alumnos)
+     - Crear materias (POST /materias)
+     - Inscribir (POST /inscripciones)
+     - Consultar (GET /alumnos/:id/materias)
+     - Bajas lógicas (DELETE /alumnos/:id, DELETE /inscripciones)
+
+
+ESTRUCTURA DEL PROYECTO
+-------------------------
+src/sql/esquema.sql         -> Base de datos completa (para DbVisualizer)
+src/sql/datos.sql           -> Datos iniciales (roles, carreras, admin)
+postman/                    -> Colección Postman
+.env.example                -> Template de configuración
+setup.bat                   -> Setup automático (opcional, Windows)
+README.md                   -> Documentación completa

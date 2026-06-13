@@ -1,0 +1,20 @@
+{
+  "name": "serveralumnos",
+  "version": "1.0.0",
+  "description": "API RESTful para gestión de alumnos, materias e inscripciones",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.1",
+    "joi": "^18.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.22.3"
+  }
+}
