@@ -1,14 +1,22 @@
 -- ============================================================
--- Script SQL - Base de datos: dbserveralumnos
--- Crear la base de datos primero en DbVisualizer y ejecutar este script
+-- Script COMPLETO de la Base de Datos: dbserveralumnos
+-- TP - API RESTful Alumnos, Materias e Inscripciones
+-- Taller de Programación 2
+--
+-- Como usarlo en DbVisualizer:
+--   1. Abrí DbVisualizer y conectate a tu MySQL
+--   2. Archivo → Ejecutar SQL → Seleccioná este archivo
+--   3. Ejecutalo completo (crea la DB, tablas, datos y admin)
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS dbserveralumnos;
 USE dbserveralumnos;
 
 -- ============================================================
--- TABLA: roles
+-- TABLAS
 -- ============================================================
+
+-- Roles de usuario
 CREATE TABLE roles (
     rol_id INT AUTO_INCREMENT,
     rol_nombre VARCHAR(50) NOT NULL,
@@ -21,9 +29,7 @@ CREATE TABLE roles (
     PRIMARY KEY (rol_id)
 );
 
--- ============================================================
--- TABLA: carreras
--- ============================================================
+-- Carreras
 CREATE TABLE carreras (
     car_id INT AUTO_INCREMENT,
     car_nombre VARCHAR(100) NOT NULL,
@@ -36,9 +42,7 @@ CREATE TABLE carreras (
     PRIMARY KEY (car_id)
 );
 
--- ============================================================
--- TABLA: usuarios
--- ============================================================
+-- Usuarios (alumnos, coordinadores, admins)
 CREATE TABLE usuarios (
     usu_id INT AUTO_INCREMENT,
     usu_nombre VARCHAR(100) NOT NULL,
@@ -60,9 +64,7 @@ CREATE TABLE usuarios (
     CONSTRAINT fk_usuarios_usubaja FOREIGN KEY (usu_usubaja) REFERENCES usuarios(usu_id)
 );
 
--- ============================================================
--- TABLA: materias
--- ============================================================
+-- Materias
 CREATE TABLE materias (
     mat_id INT AUTO_INCREMENT,
     mat_nombre VARCHAR(100) NOT NULL,
@@ -80,9 +82,7 @@ CREATE TABLE materias (
     CONSTRAINT fk_materias_usubaja FOREIGN KEY (mat_usubaja) REFERENCES usuarios(usu_id)
 );
 
--- ============================================================
--- TABLA: inscripciones
--- ============================================================
+-- Inscripciones (relación alumno-materia)
 CREATE TABLE inscripciones (
     ins_id INT AUTO_INCREMENT,
     ins_id_alumno INT NOT NULL,
@@ -100,3 +100,26 @@ CREATE TABLE inscripciones (
     CONSTRAINT fk_inscripciones_usumodif FOREIGN KEY (ins_usumodif) REFERENCES usuarios(usu_id),
     CONSTRAINT fk_inscripciones_usubaja FOREIGN KEY (ins_usubaja) REFERENCES usuarios(usu_id)
 );
+
+-- ============================================================
+-- DATOS INICIALES
+-- ============================================================
+
+-- Roles
+INSERT INTO roles(rol_nombre, rol_fechaalta) VALUES
+('Administrador', CURRENT_TIMESTAMP()),
+('Coordinador', CURRENT_TIMESTAMP()),
+('Alumno', CURRENT_TIMESTAMP());
+
+-- Carreras
+INSERT INTO carreras(car_nombre, car_fechaalta) VALUES
+('Ingeniería en Sistemas', CURRENT_TIMESTAMP()),
+('Licenciatura en Administración', CURRENT_TIMESTAMP()),
+('Contador Público', CURRENT_TIMESTAMP()),
+('Ingeniería Industrial', CURRENT_TIMESTAMP());
+
+-- Usuario admin por defecto (password: admin123)
+INSERT INTO usuarios(usu_nombre, usu_mail, usu_usuario, usu_password, usu_id_rol, usu_usualta, usu_fechaalta)
+VALUES('Admin', 'admin@test.com', 'admin', '$2b$10$iK0Bk9e.5RnWFWZF8gmBuuiJ.zdUJX6tcmAxB7ofaJXR1fh0Ol39q', 1, NULL, CURRENT_TIMESTAMP());
+
+UPDATE usuarios SET usu_usualta = 1 WHERE usu_id = 1;

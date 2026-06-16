@@ -4,16 +4,11 @@ API RESTful - Alumnos, Materias e Inscripciones
 Taller de Programación 2
 ============================================
 
-1. BASE DE DATOS (MySQL)
--------------------------
-Opción DbVisualizer (recomendada):
+1. BASE DE DATOS (MySQL + DbVisualizer)
+----------------------------------------
   - Abrí DbVisualizer y conectate a tu MySQL
-  - Ejecutá: src/sql/esquema.sql
-  - Ejecutá: src/sql/datos.sql
-
-Opción consola:
-  mysql -u root -p < src/sql/esquema.sql
-  mysql -u root -p < src/sql/datos.sql
+  - Archivo → Ejecutar SQL → Seleccioná "Base de datos/script_completo.sql"
+  - Ejecutalo (crea TODO: DB, tablas con auditoría, datos, admin)
 
 Ya tenés un admin creado:
   usuario: admin
@@ -50,8 +45,7 @@ Copiá .env.example a .env y completá:
 
 ESTRUCTURA DEL PROYECTO
 -------------------------
-src/sql/esquema.sql         -> Base de datos completa (para DbVisualizer)
-src/sql/datos.sql           -> Datos iniciales (roles, carreras, admin)
-postman/                    -> Colección Postman
-.env.example                -> Template de configuración
-README.md                   -> Documentación completa
+Base de datos/script_completo.sql   -> Script ÚNICO con toda la DB
+postman/                            -> Colección Postman
+.env.example                        -> Template de configuración
+README.md                           -> Documentación completa

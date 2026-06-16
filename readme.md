@@ -22,17 +22,10 @@ Servidor desarrollado con **Node.js** + **Express** para el Trabajo Práctico de
 
 ### 1. Base de datos (MySQL + DbVisualizer)
 
-**Opción A - Con script automático:**
-Asegurate de tener `mysql` en tu PATH y ejecutá:
-```bash
-mysql -u root -p < src\sql\esquema.sql
-mysql -u root -p < src\sql\datos.sql
-```
-
-**Opción B - Con DbVisualizer:**
+Ejecutá el script completo en DbVisualizer:
 1. Abrí DbVisualizer y conectate a tu MySQL
-2. Archivo → Ejecutar SQL → Seleccioná `src/sql/esquema.sql`
-3. Archivo → Ejecutar SQL → Seleccioná `src/sql/datos.sql`
+2. Archivo → Ejecutar SQL → Seleccioná `Base de datos/script_completo.sql`
+3. Ejecutalo (crea la DB, tablas, datos iniciales y el admin)
 
 ### 2. Variables de entorno
 
@@ -118,12 +111,11 @@ Podés crear más usuarios (coordinadores, alumnos) via `POST /usuarios` y `POST
 │   │   ├── alumno.service.js
 │   │   ├── materia.service.js
 │   │   └── inscripcion.service.js
-│   ├── sql/
-│   │   ├── esquema.sql
-│   │   └── datos.sql
 │   ├── utils/
 │   │   └── jwt.js
 │   └── index.js
+├── Base de datos/
+│   └── script_completo.sql
 ├── postman/
 │   └── API Alumnos.postman_collection.json
 ├── .env.example
