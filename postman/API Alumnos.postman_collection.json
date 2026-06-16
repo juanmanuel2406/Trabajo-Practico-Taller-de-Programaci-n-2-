@@ -1,0 +1,408 @@
+{
+	"info": {
+		"name": "API Alumnos - Materias - Inscripciones",
+		"description": "Colección de endpoints para el TP de Taller de Programación 2",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "url",
+			"value": "http://localhost:3000"
+		},
+		{
+			"key": "token",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Usuarios",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"usuario\": \"admin\",\n  \"pass\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{url}}/usuarios/login",
+							"host": ["{{url}}"],
+							"path": ["usuarios", "login"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.collectionVariables.set('token', jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear Usuario (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Coordinador 1\",\n  \"mail\": \"coord1@test.com\",\n  \"usuario\": \"coord1\",\n  \"pass\": \"1234\",\n  \"id_rol\": 2\n}"
+						},
+						"url": {
+							"raw": "{{url}}/usuarios",
+							"host": ["{{url}}"],
+							"path": ["usuarios"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Alumnos",
+			"item": [
+				{
+					"name": "Listar Alumnos (activos)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/alumnos",
+							"host": ["{{url}}"],
+							"path": ["alumnos"]
+						}
+					}
+				},
+				{
+					"name": "Listar Alumnos (todos)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/alumnos?todos=true",
+							"host": ["{{url}}"],
+							"path": ["alumnos"],
+							"query": [
+								{
+									"key": "todos",
+									"value": "true"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Ver Alumno por ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/alumnos/1",
+							"host": ["{{url}}"],
+							"path": ["alumnos", "1"]
+						}
+					}
+				},
+				{
+					"name": "Crear Alumno (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Alumno 1\",\n  \"mail\": \"alumno1@test.com\",\n  \"usuario\": \"alumno1\",\n  \"pass\": \"1234\"\n}"
+						},
+						"url": {
+							"raw": "{{url}}/alumnos",
+							"host": ["{{url}}"],
+							"path": ["alumnos"]
+						}
+					}
+				},
+				{
+					"name": "Editar Alumno",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Alumno 1 Modificado\",\n  \"mail\": \"alumno1mod@test.com\"\n}"
+						},
+						"url": {
+							"raw": "{{url}}/alumnos/1",
+							"host": ["{{url}}"],
+							"path": ["alumnos", "1"]
+						}
+					}
+				},
+				{
+					"name": "Baja Lógica Alumno (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/alumnos/1",
+							"host": ["{{url}}"],
+							"path": ["alumnos", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Materias",
+			"item": [
+				{
+					"name": "Listar Materias",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/materias",
+							"host": ["{{url}}"],
+							"path": ["materias"]
+						}
+					}
+				},
+				{
+					"name": "Ver Materia por ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/materias/1",
+							"host": ["{{url}}"],
+							"path": ["materias", "1"]
+						}
+					}
+				},
+				{
+					"name": "Crear Materia (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Programación 2\",\n  \"id_carrera\": 1\n}"
+						},
+						"url": {
+							"raw": "{{url}}/materias",
+							"host": ["{{url}}"],
+							"path": ["materias"]
+						}
+					}
+				},
+				{
+					"name": "Editar Materia (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Programación 2 (Actualizada)\"\n}"
+						},
+						"url": {
+							"raw": "{{url}}/materias/1",
+							"host": ["{{url}}"],
+							"path": ["materias", "1"]
+						}
+					}
+				},
+				{
+					"name": "Baja Lógica Materia (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/materias/1",
+							"host": ["{{url}}"],
+							"path": ["materias", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Inscripciones",
+			"item": [
+				{
+					"name": "Inscribir Alumno en Materia",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_alumno\": 1,\n  \"id_materia\": 1\n}"
+						},
+						"url": {
+							"raw": "{{url}}/inscripciones",
+							"host": ["{{url}}"],
+							"path": ["inscripciones"]
+						}
+					}
+				},
+				{
+					"name": "Materias de un Alumno",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/alumnos/1/materias",
+							"host": ["{{url}}"],
+							"path": ["alumnos", "1", "materias"]
+						}
+					}
+				},
+				{
+					"name": "Alumnos de una Materia",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/materias/1/alumnos",
+							"host": ["{{url}}"],
+							"path": ["materias", "1", "alumnos"]
+						}
+					}
+				},
+				{
+					"name": "Baja Lógica Inscripción",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_alumno\": 1,\n  \"id_materia\": 1\n}"
+						},
+						"url": {
+							"raw": "{{url}}/inscripciones",
+							"host": ["{{url}}"],
+							"path": ["inscripciones"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
