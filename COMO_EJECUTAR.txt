@@ -54,5 +54,4 @@ src/sql/esquema.sql         -> Base de datos completa (para DbVisualizer)
 src/sql/datos.sql           -> Datos iniciales (roles, carreras, admin)
 postman/                    -> Colección Postman
 .env.example                -> Template de configuración
-setup.bat                   -> Setup automático (opcional, Windows)
 README.md                   -> Documentación completa

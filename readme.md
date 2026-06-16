@@ -18,17 +18,7 @@ Servidor desarrollado con **Node.js** + **Express** para el Trabajo Práctico de
 - MySQL Server (8.0+)
 - Cliente MySQL (`mysql` en la terminal)
 
-## Setup rápido (Windows)
-
-Ejecutar **una sola vez**:
-
-```bash
-setup.bat
-```
-
-Esto instala dependencias y puede crear la DB si se lo pedís.
-
-## Setup manual paso a paso
+## Setup paso a paso
 
 ### 1. Base de datos (MySQL + DbVisualizer)
 
@@ -94,7 +84,7 @@ Podés crear más usuarios (coordinadores, alumnos) via `POST /usuarios` y `POST
 |---------|-------------|
 | `npm run dev` | Inicia el servidor en modo desarrollo con Nodemon |
 | `npm test` | Ejecuta los tests (no configurados aún) |
-| `setup.bat` | Setup completo (Windows) |
+
 
 ## Estructura del proyecto
 
@@ -139,8 +129,7 @@ Podés crear más usuarios (coordinadores, alumnos) via `POST /usuarios` y `POST
 ├── .env.example
 ├── .gitignore
 ├── package.json
-├── readme.md
-└── setup.bat
+└── readme.md
 ```
 
 ## Endpoints
