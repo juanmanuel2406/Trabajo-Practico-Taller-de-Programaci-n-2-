@@ -1,0 +1,656 @@
+====================================================================
+DOCUMENTACION DEL PROYECTO - API Alumnos, Materias e Inscripciones
+====================================================================
+Taller de Programación 2
+====================================================================
+
+
+INDICE
+=====================================================================
+1. Estructura general del proyecto
+2. package.json
+3. src/index.js — Punto de entrada
+4. src/config/database.js — Configuración MySQL
+5. src/db/connection.js — Pool de conexiones
+6. src/utils/jwt.js — Tokens JWT
+7. src/middlewares/errorHandler.js — Manejo de errores
+8. src/middlewares/validatorHandler.js — Validación con Joi
+9. src/middlewares/secure.js — Autenticación y roles
+10. src/schemas/ — Esquemas de validación
+11. src/services/ — Lógica de negocio
+12. src/controllers/ — Controladores
+13. src/routes/ — Definición de rutas
+14. Base de datos/script_completo.sql
+15. postman/ — Colección Postman
+16. Flujo del token (cómo funciona la autenticación)
+
+
+=====================================================================
+1. ESTRUCTURA GENERAL DEL PROYECTO
+=====================================================================
+
+La arquitectura sigue el patrón de CAPAS (como el profe lo pide):
+
+  Ruta (router)
+      → Middleware (validator, secure)
+          → Controlador (controller)
+              → Servicio (service)
+                  → Base de datos (MySQL)
+
+Cada capa tiene una responsabilidad única y se comunica con la
+siguiente.
+
+
+=====================================================================
+2. package.json
+=====================================================================
+
+Propósito: Define el proyecto Node.js, sus dependencias y scripts.
+
+Dependencias principales:
+  - express        → Framework web (rutas, middleware, etc.)
+  - mysql2         → Conexión a MySQL (versión con promesas)
+  - bcrypt         → Encriptar contraseñas (hash + salt)
+  - jsonwebtoken   → Crear y verificar tokens JWT
+  - joi            → Validar datos de entrada (schemas)
+  - dotenv         → Leer variables del archivo .env
+  - nodemon (dev)  → Reinicia el servidor automáticamente al cambiar código
+
+Scripts:
+  npm run dev  → Ejecuta: nodemon src/index.js
+  npm test     → No implementado aún
+
+
+=====================================================================
+3. src/index.js — PUNTO DE ENTRADA
+=====================================================================
+
+Propósito: Arranca el servidor Express.
+
+Qué hace:
+  1. Importa express y todos los routers
+  2. Crea la app con express()
+  3. Middleware global: express.json() → convierte el body a JSON
+  4. Monta los 4 routers en sus rutas base:
+       /usuarios     → usuarioRouter
+       /alumnos      → alumnoRouter
+       /materias     → materiaRouter
+       /inscripciones → inscripcionRouter
+  5. Ruta raíz GET / → responde texto plano
+  6. Middleware de errores: errorLog y errorHandler
+  7. Toma el puerto de .env y arranca el servidor
+  8. Al iniciar, prueba la conexión a MySQL con testConnection()
+
+Funciones:
+  Ninguna propia. Es código secuencial que configura la app.
+
+SECUENCIA al recibir una petición:
+  Request → Router → Middlewares (validator, secure)
+          → Controller → Service → MySQL → Response
+
+
+=====================================================================
+4. src/config/database.js — CONFIGURACIÓN MySQL
+=====================================================================
+
+Propósito: Exporta un objeto con la configuración de MySQL.
+
+Qué contiene:
+  host, port, user, password, database
+  (todos tomados de las variables de entorno con process.env)
+  waitForConnections, connectionLimit, queueLimit → para el pool
+
+Funciones: Ninguna. Solo exporta un objeto literal.
+
+
+=====================================================================
+5. src/db/connection.js — POOL DE CONEXIONES
+=====================================================================
+
+Propósito: Crea y exporta un pool de conexiones a MySQL.
+
+Qué exporta:
+  pool → Objeto para hacer consultas SQL (pool.query())
+  testConnection() → Función para verificar la conexión
+
+testConnection():
+  - Toma una conexión del pool
+  - Si funciona: log "Conexion exitosa con la DB MySQL"
+  - Si falla: log "Error al conectar con la DB" + mensaje
+  - Devuelve true/false
+
+
+=====================================================================
+6. src/utils/jwt.js — TOKENS JWT
+=====================================================================
+
+Propósito: Funciones para crear y verificar tokens JWT.
+
+Funciones:
+  sign(data)
+    - Recibe un objeto con info del usuario (id, nombre, id_rol)
+    - Lo firma con JWT_SECRET del .env
+    - Devuelve el token (string)
+
+  getToken(auth)
+    - Recibe el header "Authorization" completo
+    - Verifica que empiece con "Bearer "
+    - Si no: tira error "Formato del token inválido"
+    - Si sí: devuelve SOLO el token (sin "Bearer ")
+
+  decode(auth)
+    - Llama a getToken() para sacar el "Bearer "
+    - Verifica el token con jwt.verify() y el JWT_SECRET
+    - Si el token es válido: devuelve los datos (id, nombre, id_rol)
+    - Si el token expiró o es inválido: tira error
+
+FLUJO COMPLETO:
+  1. Usuario hace login → el service llama a sign({id, nombre, id_rol})
+  2. El token se devuelve al frontend (Postman)
+  3. Postman lo guarda como variable {{token}}
+  4. En cada request, Postman envía:
+       Authorization: Bearer <token>
+  5. El middleware secure.js llama a decode() para verificar quién es
+
+
+=====================================================================
+7. src/middlewares/errorHandler.js — MANEJO DE ERRORES
+=====================================================================
+
+Propósito: Captura errores y devuelve JSON en vez de HTML.
+
+Funciones:
+  errorLog(err, req, res, next)
+    - Solo hace console.error(err.stack)
+    - Pasa el error al siguiente middleware con next(err)
+    - Sirve para DEPURAR (ver el error completo en la terminal)
+
+  errorHandler(err, req, res, next)
+    - Toma el error
+    - Si tiene err.status usa ese código, si no usa 500
+    - Devuelve JSON: { message: err.message }
+    - Esto es lo que ve el frontend/Postman cuando algo falla
+
+Ejemplo de uso:
+  En cualquier controller o service:
+    throw new Error('El alumno no existe')
+    // Status por defecto: 500
+  O:
+    const error = new Error('Privilegios insuficientes')
+    error.status = 401
+    throw error
+    // Status: 401
+
+
+=====================================================================
+8. src/middlewares/validatorHandler.js — VALIDACIÓN CON JOI
+=====================================================================
+
+Propósito: Validar los datos de entrada ANTES de que lleguen al
+controlador. (ESTO PREGUNTÓ EL PROFE)
+
+Función:
+  validator(schema, property)
+    - Recibe:
+        schema   → Un esquema de Joi (define qué campos son válidos)
+        property → 'body', 'params', o 'query'
+                   (dónde buscar los datos en el request)
+    - Devuelve un MIDDLEWARE (req, res, next) que:
+        1. Toma los datos: const data = req[property]
+        2. Los valida: schema.validate(data)
+        3. Si hay error:
+             - Crea un error con el mensaje de Joi
+             - Le asigna status 400 (Bad Request)
+             - Llama a next(error) → va al errorHandler
+        4. Si no hay error:
+             - Llama a next() → sigue al controlador
+
+Ejemplo concreto (alumno.router.js):
+  alumnoRouter.post('/',
+      checkRol(ROLES.ADMIN),
+      validator(postAlumnoSchema, 'body'),
+      postAlumno)
+
+  Esto significa:
+    1. Verifica que sea admin
+    2. Valida que req.body cumpla postAlumnoSchema
+       (nombre, mail, usuario, pass con sus reglas)
+    3. Si pasa, ejecuta postAlumno (el controlador)
+    4. Si no pasa, devuelve 400 con el mensaje de error
+
+Esquemas Joi usados (definidos en src/schemas/):
+  - postAlumnoSchema: nombre (2-100 chars), mail (email válido),
+                      usuario (3-30), pass (4+)
+  - postMateriaSchema: nombre (2-100), id_carrera (number)
+  - postInscripcionSchema: id_alumno (number), id_materia (number)
+  - loginSchema: usuario (string), pass (string)
+
+
+=====================================================================
+9. src/middlewares/secure.js — AUTENTICACIÓN Y ROLES
+=====================================================================
+
+Propósito: Verificar quién hace la solicitud mediante JWT y controlar
+qué puede hacer según su rol.
+
+ROLES definidos:
+  ADMIN       = 1 → puede hacer TODO
+  COORDINADOR = 2 → solo consultar (GETs)
+  ALUMNO      = 3 → solo sus propios datos e inscribirse
+
+Funciones:
+  checkRol(...rolesPermitidos)
+    - Recibe UNO O MÁS números de rol (ej: checkRol(1, 2))
+    - Devuelve un middleware que:
+        1. Busca el header Authorization
+        2. Llama a decode() para sacar los datos del token
+        3. Verifica que data.id_rol esté en rolesPermitidos
+        4. Si está: guarda data.id en req.idUsuario y data en
+           req.usuario, luego next()
+        5. Si NO está: error 401 "Privilegios insuficientes"
+
+  checkAdmin()
+    - Atajo: checkRol(ROLES.ADMIN) → solo administradores
+
+  obtenerUsuario()
+    - Middleware más suave: si hay token, lo decodifica y lo
+      guarda en req.usuario
+    - Si NO hay token, no bloquea, solo sigue (next())
+    - Sirve para rutas donde el alumno puede ver sus propios datos
+
+CAMBIO QUE HICIERON AYER:
+  Antes: req.body.idUsuario = data.id  (guardaba en el body)
+  Ahora: req.idUsuario = data.id       (guarda en el request)
+
+  Esto es mejor porque:
+    - No mezcla datos del usuario autenticado con datos del body
+    - El body solo tiene lo que envía Postman (ej: nombre, mail)
+
+
+=====================================================================
+10. src/schemas/ — ESQUEMAS DE VALIDACIÓN
+=====================================================================
+
+Propósito: Definir las reglas de validación con Joi.
+
+ARCHIVOS:
+
+usuario.schema.js
+  postUsuarioSchema → para crear usuarios (POST /usuarios)
+    Campos: nombre (2-100), mail (email), usuario (3-30),
+            pass (4+), id_rol (1, 2 o 3)
+  loginSchema → para login (POST /usuarios/login)
+    Campos: usuario (string), pass (string)
+
+alumno.schema.js
+  postAlumnoSchema → para crear alumno (POST /alumnos)
+    Campos: nombre (2-100), mail (email), usuario (3-30), pass (4+)
+  putAlumnoSchema → para editar alumno (PUT /alumnos/:id)
+    Campos: nombre (opcional), mail (opcional)
+  paramIdSchema → para validar parámetros de ruta
+    Campos: id (number >= 1)
+
+materia.schema.js
+  postMateriaSchema → para crear materia
+    Campos: nombre (2-100), id_carrera (number, obligatorio)
+  putMateriaSchema → para editar materia
+    Campos: nombre (opcional), id_carrera (opcional)
+  paramIdSchema → idem alumno
+
+inscripcion.schema.js
+  postInscripcionSchema → para inscribir
+    Campos: id_alumno (number), id_materia (number)
+  deleteInscripcionSchema → para dar de baja inscripción
+    Campos: id_alumno (number), id_materia (number)
+
+
+=====================================================================
+11. src/services/ — LÓGICA DE NEGOCIO
+=====================================================================
+
+Cada service es una CLASE con métodos que hacen consultas SQL.
+
+═══════════════════════════════════════════════════════════════
+usuario.service.js
+═══════════════════════════════════════════════════════════════
+
+  login(data)
+    - Recibe: { usuario, pass }
+    - Busca el usuario por usu_usuario en MySQL
+    - Si NO existe: error 401 "Datos de login incorrectos"
+    - Si existe: compara la pass con bcrypt.compare()
+    - Si la pass NO coincide: error 401
+    - Si la pass coincide: genera un JWT con sign({id, nombre, id_rol})
+    - Devuelve: { login: true, token: "eyJ..." }
+
+  crearUsuario(usuario)
+    - Recibe: { nombre, mail, usuario, pass, id_rol, idUsuario }
+    - Encripta la pass con bcrypt.hash(pass, 10)
+    - Inserta en la tabla usuarios con los campos de auditoría
+      (usu_usualta, usu_fechaalta)
+    - Devuelve: { id, nombre, mail, usuario }
+
+═══════════════════════════════════════════════════════════════
+alumno.service.js
+═══════════════════════════════════════════════════════════════
+
+  get(todos = false)
+    - Si todos=false: SELECT con WHERE usu_fechabaja IS NULL
+      (solo activos)
+    - Si todos=true: SELECT sin filtro (todos, incluso dados de baja)
+    - Hace JOIN con roles para mostrar el nombre del rol
+    - Devuelve: array de alumnos
+
+  getById(id)
+    - SELECT con WHERE usu_id = ?
+    - JOIN con roles
+    - Si no encuentra: error 404
+
+  post(alumno)
+    - Recibe: { nombre, mail, usuario, pass, idUsuario }
+    - Asigna rol 3 (ALUMNO) automáticamente
+    - Encripta pass con bcrypt
+    - Inserta en usuarios con auditoría
+
+  update(id, data)
+    - Recibe: id del alumno, { nombre, mail, idUsuario }
+    - UPDATE con COALESCE → si el campo llega, lo actualiza,
+      si no, deja el valor anterior
+    - Actualiza usu_usumodif y usu_fechamodif
+
+  delete(idUsuario, id)
+    - NO hace DELETE físico (baja lógica)
+    - UPDATE: setea usu_usubaja y usu_fechabaja
+    - La entidad sigue existiendo en la DB pero con fecha de baja
+
+═══════════════════════════════════════════════════════════════
+materia.service.js
+═══════════════════════════════════════════════════════════════
+
+  get() → Lista materias activas con JOIN a carreras
+  getById(id) → Una materia por ID
+  post(materia) → Crea materia con auditoría
+  update(id, data) → Edita materia con COALESCE
+  delete(idUsuario, id) → Baja lógica (setea fecha de baja)
+
+═══════════════════════════════════════════════════════════════
+inscripcion.service.js
+═══════════════════════════════════════════════════════════════
+
+  post(data)
+    - Recibe: { id_alumno, id_materia, idUsuario }
+    - VALIDA que la materia exista (si no: error 404)
+    - VALIDA que el alumno no se inscriba a materias de otra carrera
+      (esto fue agregado ayer por el PR)
+      → Busca las inscripciones activas del alumno
+      → Si ya tiene materias de otra carrera: error 400
+        "El alumno no puede inscribirse a materias de otra carrera"
+    - Inserta en inscripciones con auditoría
+
+  getMateriasDeAlumno(idAlumno)
+    - SELECT con JOIN a materias y carreras
+    - Filtra: ins_fechabaja IS NULL Y mat_fechabaja IS NULL
+
+  getAlumnosDeMateria(idMateria)
+    - SELECT con JOIN a usuarios
+    - Filtra: inscripciones activas y usuarios activos
+
+  delete(data)
+    - Baja lógica de la inscripción
+    - UPDATE: setea ins_usubaja y ins_fechabaja
+    - WHERE: id_alumno, id_materia Y fechabaja IS NULL
+    - Si no afectó filas: error 404
+
+
+=====================================================================
+12. src/controllers/ — CONTROLADORES
+=====================================================================
+
+Propósito: Reciben el request, llaman al service correspondiente
+y devuelven la respuesta JSON. NO tienen lógica de negocio.
+
+═══════════════════════════════════════════════════════════════
+usuario.controller.js
+═══════════════════════════════════════════════════════════════
+
+  login(req, res, next)
+    - Toma req.body (usuario, pass)
+    - Llama a service.login()
+    - Devuelve: { login: true, token: "..." }
+
+  crearUsuario(req, res, next)
+    - Toma req.body (nombre, mail, usuario, pass, id_rol)
+    - Asigna req.idUsuario al body (viene del middleware secure)
+    - Llama a service.crearUsuario()
+    - Devuelve: { id, nombre, mail, usuario }
+
+═══════════════════════════════════════════════════════════════
+alumno.controller.js
+═══════════════════════════════════════════════════════════════
+
+  getAlumnos(req, res, next)
+    - Toma req.query.todos (opcional)
+    - Llama a service.get(todos)
+    - Devuelve array de alumnos
+
+  getAlumno(req, res, next)
+    - Toma req.params.id
+    - Llama a service.getById(id)
+
+  postAlumno(req, res, next)
+    - Toma req.body, asigna req.idUsuario
+    - Llama a service.post()
+    - Devuelve 201 (Created)
+
+  putAlumno(req, res, next)
+    - Toma req.params.id y req.body, asigna req.idUsuario
+    - Llama a service.update()
+
+  deleteAlumno(req, res, next)
+    - Toma req.params.id y req.idUsuario
+    - Llama a service.delete()
+
+═══════════════════════════════════════════════════════════════
+materia.controller.js
+═══════════════════════════════════════════════════════════════
+  Misma estructura que alumno.controller.js pero con materias.
+
+  getMaterias → service.get()
+  getMateria → service.getById(id)
+  postMateria → service.post()
+  putMateria → service.update()
+  deleteMateria → service.delete()
+
+═══════════════════════════════════════════════════════════════
+inscripcion.controller.js
+═══════════════════════════════════════════════════════════════
+
+  postInscripcion(req, res, next)
+    - Toma req.body, asigna req.idUsuario
+    - Llama a service.post()
+
+  getMateriasDeAlumno(req, res, next)
+    - Toma req.params.id (es el id del alumno)
+    - Llama a service.getMateriasDeAlumno()
+
+  getAlumnosDeMateria(req, res, next)
+    - Toma req.params.id (es el id de la materia)
+    - Llama a service.getAlumnosDeMateria()
+
+  deleteInscripcion(req, res, next)
+    - Toma req.body, asigna req.idUsuario
+    - Llama a service.delete()
+
+
+=====================================================================
+13. src/routes/ — DEFINICIÓN DE RUTAS
+=====================================================================
+
+Propósito: Asocia URLs, métodos HTTP y middlewares con controladores.
+
+═══════════════════════════════════════════════════════════════
+usuario.router.js
+═══════════════════════════════════════════════════════════════
+
+  POST /login → [validator(loginSchema, 'body')] → login
+    - Sin autenticación (cualquiera puede loguearse)
+
+  POST / → [checkAdmin(), validator(postUsuarioSchema, 'body')] → crearUsuario
+    - Solo ADMIN puede crear usuarios
+
+═══════════════════════════════════════════════════════════════
+alumno.router.js
+═══════════════════════════════════════════════════════════════
+
+  GET / → [checkRol(1, 2)] → getAlumnos
+    - Admin y Coordinador pueden listar
+
+  GET /:id → [checkRol(1, 2, 3), obtenerUsuario,
+              verifica que sea admin/coord o el mismo alumno] → getAlumno
+    - Admin, coordinador o el alumno ID = :id
+
+  GET /:id/materias → [checkRol(1, 2, 3), igual que arriba] → getMateriasDeAlumno
+    - Materias de un alumno específico
+
+  POST / → [checkRol(1), validator(postAlumnoSchema, 'body')] → postAlumno
+    - Solo admin crea alumnos
+
+  PUT /:id → [checkRol(1, 3), verifica que sea admin o el mismo alumno] → putAlumno
+    - Admin o el propio alumno edita
+
+  DELETE /:id → [checkRol(1)] → deleteAlumno
+    - Solo admin da de baja
+
+═══════════════════════════════════════════════════════════════
+materia.router.js
+═══════════════════════════════════════════════════════════════
+
+  GET / → [checkRol(1, 2, 3)] → getMaterias       (todos pueden ver)
+  GET /:id → [checkRol(1, 2, 3)] → getMateria     (todos pueden ver)
+  GET /:id/alumnos → [checkRol(1, 2)] → getAlumnosDeMateria (admin/coord)
+  POST / → [checkRol(1)] → postMateria            (solo admin)
+  PUT /:id → [checkRol(1)] → putMateria           (solo admin)
+  DELETE /:id → [checkRol(1)] → deleteMateria     (solo admin)
+
+═══════════════════════════════════════════════════════════════
+inscripcion.router.js
+═══════════════════════════════════════════════════════════════
+
+  POST / → [checkRol(1, 3), verifica admin o alumno dueño,
+            validator(postInscripcionSchema, 'body')] → postInscripcion
+  DELETE / → [checkRol(1, 3), verifica admin o alumno dueño,
+              validator(deleteInscripcionSchema, 'body')] → deleteInscripcion
+
+
+=====================================================================
+14. Base de datos/script_completo.sql
+=====================================================================
+
+Propósito: Crea toda la base de datos MySQL.
+
+Qué hace en orden:
+  1. CREATE DATABASE IF NOT EXISTS dbserveralumnos
+  2. USE dbserveralumnos
+  3. CREATE TABLE roles → (rol_id, rol_nombre, auditoría)
+  4. CREATE TABLE carreras → (car_id, car_nombre, auditoría)
+  5. CREATE TABLE usuarios → (usu_id, usu_nombre, usu_mail,
+     usu_usuario UNIQUE, usu_password, usu_id_rol → FK roles,
+     auditoría con FKs a sí mismo)
+  6. CREATE TABLE materias → (mat_id, mat_nombre,
+     mat_id_carrera → FK carreras, auditoría)
+  7. CREATE TABLE inscripciones → (ins_id,
+     ins_id_alumno → FK usuarios, ins_id_materia → FK materias,
+     auditoría)
+  8. INSERT roles (Administrador, Coordinador, Alumno)
+  9. INSERT carreras (4 carreras)
+  10. INSERT admin por defecto (admin / admin123)
+  11. UPDATE auto-referencia del admin
+
+Campos de auditoría en TODAS las tablas:
+  *_usualta    → quien creó (FK a usuarios)
+  *_fechaalta  → cuándo se creó
+  *_usumodif   → quien modificó (FK a usuarios)
+  *_fechamodif → cuándo se modificó
+  *_usubaja    → quien eliminó lógicamente (FK a usuarios)
+  *_fechabaja  → cuándo se eliminó lógicamente
+
+Baja lógica: *_fechabaja IS NULL = activo
+             *_fechabaja IS NOT NULL = dado de baja (pero no borrado)
+
+
+=====================================================================
+15. postman/ — COLECCIÓN POSTMAN
+=====================================================================
+
+Propósito: Probar todos los endpoints.
+
+Usuarios:
+  Login Admin (admin/admin123)      → setea {{token}} con token admin
+  Login Coordinador (coord1/1234)   → setea {{token}} con token coord
+  Login Alumno (alumno1/1234)       → setea {{token}} con token alumno
+  Cerrar Sesión                     → borra {{token}} (lo deja vacío)
+  Crear Usuario (solo Admin)        → requiere token admin
+
+Alumnos: Listar, Ver, Crear, Editar, Baja Lógica
+Materias: Listar, Ver, Crear, Editar, Baja Lógica
+Inscripciones: Inscribir, Ver materias de alumno,
+               Ver alumnos de materia, Baja lógica
+
+Cada request usa Authorization → Bearer Token → {{token}}
+(heredado de la colección, configurado UNA SOLA VEZ)
+
+
+=====================================================================
+16. FLUJO DEL TOKEN (AUTENTICACIÓN)
+=====================================================================
+
+PASO A PASO:
+
+1. El usuario hace POST /usuarios/login con { usuario, pass }
+
+2. El service busca el usuario en MySQL, compara la pass con bcrypt
+
+3. Si es correcto, crea un JWT con:
+     sign({ id: 1, nombre: "Admin", id_rol: 1 })
+   usando JWT_SECRET del .env
+
+4. Devuelve al Postman:
+     { login: true, token: "eyJhbGciOiJIUzI1NiIs..." }
+
+5. El Postman, gracias al script en Tests:
+     pm.collectionVariables.set('token', jsonData.token)
+   guarda el token en la variable {{token}}
+
+6. TODOS los requests (menos login) tienen configurado:
+     Authorization → Bearer Token → {{token}}
+   Postman agrega automáticamente el header:
+     Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+
+7. El middleware secure.js:
+     - Toma el header Authorization
+     - Llama a decode() que verifica el token con JWT_SECRET
+     - Si es válido: obtiene { id, nombre, id_rol }
+     - Guarda id en req.idUsuario
+     - Verifica si el rol tiene permiso (checkRol)
+
+8. Si el token NO es válido o el rol NO tiene permiso:
+     → error 401 "Privilegios insuficientes"
+
+CÓMO CAMBIAR DE USUARIO:
+  En Postman, simplemente ejecutá el Login del usuario que
+  quieras usar. El token se SOBREESCRIBE automáticamente.
+
+CÓMO CERRAR SESIÓN:
+  Ejecutá "Cerrar Sesión" en Postman → borra {{token}}
+  Ahora ningún request tiene token → todos dan
+  "Privilegios insuficientes" hasta que vuelvas a loguearte.
+
+POR QUÉ ANTES NO FUNCIONABA:
+  Antes teníamos un SOLO login. Si te logueabas como Alumno,
+  el token quedaba guardado. Cuando querías hacer algo de Admin,
+  el token seguía siendo de Alumno → "Privilegios insuficientes".
+  La solución: tener 3 logins separados + botón de Cerrar Sesión.
+
+=====================================================================
+FIN DE LA DOCUMENTACIÓN
+=====================================================================

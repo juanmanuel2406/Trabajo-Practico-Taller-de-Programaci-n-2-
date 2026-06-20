@@ -146,6 +146,33 @@
 					]
 				},
 				{
+					"name": "Cerrar Sesion (borra el token)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}",
+							"host": ["{{url}}"],
+							"path": [""]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('token', '');",
+									"console.log('Token eliminado - sesion cerrada');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
 					"name": "Crear Usuario (solo Admin)",
 					"request": {
 						"method": "POST",
