@@ -46,11 +46,26 @@ class UsuarioService {
             usuario.idUsuario || 1
         ])
 
+        const id = result.insertId
+
+        const [rol] = await pool.query(
+            `SELECT rol_nombre FROM roles WHERE rol_id = ?`,
+            [usuario.id_rol]
+        )
+        const rolNombre = rol.length > 0 ? rol[0].rol_nombre : 'Desconocido'
+
+        const token = sign({ id, nombre: usuario.nombre, id_rol: usuario.id_rol })
+
         return {
-            id: result.insertId,
-            nombre: usuario.nombre,
-            mail: usuario.mail,
-            usuario: usuario.usuario
+            message: `Usuario ${usuario.nombre} creado como ${rolNombre}`,
+            token,
+            usuario: {
+                id,
+                nombre: usuario.nombre,
+                mail: usuario.mail,
+                usuario: usuario.usuario,
+                rol: rolNombre
+            }
         }
     }
 }

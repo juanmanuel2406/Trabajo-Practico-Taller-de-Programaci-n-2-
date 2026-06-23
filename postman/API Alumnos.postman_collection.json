@@ -1,7 +1,7 @@
 {
 	"info": {
 		"name": "API Alumnos - Materias - Inscripciones",
-		"description": "TP Taller de Programación 2\nUsar Authorization > Bearer Token con {{token}}\nHacer Login según el rol que se necesite",
+		"description": "TP Taller de Programación 2\nUsar Authorization > Bearer Token con {{token}}\n1. Crear Usuario (sin token)\n2. Login (sin token) para obtener token\n3. Acciones con token",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -29,7 +29,7 @@
 			"name": "Usuarios",
 			"item": [
 				{
-					"name": "Login Admin (admin / admin123)",
+					"name": "Login (sin token - obtener token)",
 					"request": {
 						"auth": {
 							"type": "noauth"
@@ -59,85 +59,7 @@
 									"var jsonData = pm.response.json();",
 									"if (jsonData.token) {",
 									"    pm.collectionVariables.set('token', jsonData.token);",
-									"    console.log('Token de ADMIN guardado');",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Login Coordinador (coord1 / 1234)",
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"usuario\": \"coord1\",\n  \"pass\": \"1234\"\n}"
-						},
-						"url": {
-							"raw": "{{url}}/usuarios/login",
-							"host": ["{{url}}"],
-							"path": ["usuarios", "login"]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"var jsonData = pm.response.json();",
-									"if (jsonData.token) {",
-									"    pm.collectionVariables.set('token', jsonData.token);",
-									"    console.log('Token de COORDINADOR guardado');",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Login Alumno (alumno1 / 1234)",
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"usuario\": \"alumno1\",\n  \"pass\": \"1234\"\n}"
-						},
-						"url": {
-							"raw": "{{url}}/usuarios/login",
-							"host": ["{{url}}"],
-							"path": ["usuarios", "login"]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"var jsonData = pm.response.json();",
-									"if (jsonData.token) {",
-									"    pm.collectionVariables.set('token', jsonData.token);",
-									"    console.log('Token de ALUMNO guardado');",
+									"    console.log('Token guardado correctamente');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -173,7 +95,7 @@
 					]
 				},
 				{
-					"name": "Crear Usuario (sin token - acceso libre)",
+					"name": "Crear Usuario (sin token - devuelve token)",
 					"request": {
 						"auth": {
 							"type": "noauth"
@@ -194,7 +116,22 @@
 							"host": ["{{url}}"],
 							"path": ["usuarios"]
 						}
-					}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.collectionVariables.set('token', jsonData.token);",
+									"    console.log('Usuario creado y token guardado');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
 				}
 			]
 		},
