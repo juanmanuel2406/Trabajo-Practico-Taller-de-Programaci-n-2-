@@ -173,8 +173,11 @@
 					]
 				},
 				{
-					"name": "Crear Usuario (solo Admin)",
+					"name": "Crear Usuario (sin token - acceso libre)",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [
 							{
