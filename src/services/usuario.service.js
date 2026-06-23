@@ -5,19 +5,23 @@ const { sign } = require('../utils/jwt')
 class UsuarioService {
     async login(data) {
         const sql =
-            `SELECT usu_id id, usu_nombre nombre, usu_id_rol id_rol, usu_password password
-              FROM usuarios
-             WHERE usu_usuario = ?`
+            `SELECT u.usu_id id, u.usu_nombre nombre, u.usu_mail mail, u.usu_usuario usuario,
+                    u.usu_id_rol id_rol, r.rol_nombre rol, u.usu_password password
+              FROM usuarios u
+              INNER JOIN roles r ON r.rol_id = u.usu_id_rol
+             WHERE u.usu_usuario = ?`
 
         const [usuario] = await pool.query(sql, [data.usuario])
 
         if (usuario.length > 0) {
-            const { id, nombre, id_rol, password } = usuario[0]
+            const { id, nombre, mail, usuario: usu, id_rol, rol, password } = usuario[0]
             const sonIguales = await bcrypt.compare(data.pass, password)
 
             if (sonIguales) {
-                const token = { token: sign({ id, nombre, id_rol }) }
-                return { login: true, ...token }
+                return {
+                    message: `Login correcto. Bienvenido ${nombre} (${rol})`,
+                    usuario: { id, nombre, mail, usuario: usu, rol }
+                }
             } else {
                 const error = new Error('Datos de login incorrectos')
                 error.status = 401
